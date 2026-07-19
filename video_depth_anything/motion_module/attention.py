@@ -17,14 +17,18 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-try:
-    import xformers
-    import xformers.ops
+# try:
+#     import xformers
+#     import xformers.ops
 
-    XFORMERS_AVAILABLE = True
-except ImportError:
-    print("xFormers not available")
-    XFORMERS_AVAILABLE = False
+#     XFORMERS_AVAILABLE = True
+# except ImportError:
+#     print("xFormers not available")
+#     XFORMERS_AVAILABLE = False
+
+# No xformers for macOS.
+# Macs use native PyTorch (MPS) for hardware acceleration, which accomplishes the same speed and memory optimizations as Nvidia's xformers.
+XFORMERS_AVAILABLE = False
 
 
 class CrossAttention(nn.Module):

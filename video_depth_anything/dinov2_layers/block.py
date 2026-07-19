@@ -23,14 +23,18 @@ from .mlp import Mlp
 logger = logging.getLogger("dinov2")
 
 
-try:
-    from xformers.ops import fmha
-    from xformers.ops import scaled_index_add, index_select_cat
+# try:
+#     from xformers.ops import fmha
+#     from xformers.ops import scaled_index_add, index_select_cat
 
-    XFORMERS_AVAILABLE = True
-except ImportError:
-    logger.warning("xFormers not available")
-    XFORMERS_AVAILABLE = False
+#     XFORMERS_AVAILABLE = True
+# except ImportError:
+#     logger.warning("xFormers not available")
+#     XFORMERS_AVAILABLE = False
+
+# No xformers for macOS.
+# Macs use native PyTorch (MPS) for hardware acceleration, which accomplishes the same speed and memory optimizations as Nvidia's xformers.
+XFORMERS_AVAILABLE = False
 
 
 class Block(nn.Module):

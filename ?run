@@ -1,0 +1,15 @@
+echo ""
+echo "Running video-depth-anything ..."
+echo ""
+
+source ./.venv/bin/activate
+
+python run.py \
+    --input_video ~/Downloads/IMG_8974.mov \
+    --encoder vitl \
+    --output_dir ~/Downloads \
+    --grayscale
+
+echo ""
+echo "Running video-depth-anything - done"
+echo ""

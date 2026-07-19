@@ -17,13 +17,17 @@ from torch import nn
 logger = logging.getLogger("dinov2")
 
 
-try:
-    from xformers.ops import memory_efficient_attention, unbind, fmha
+# try:
+#     from xformers.ops import memory_efficient_attention, unbind, fmha
 
-    XFORMERS_AVAILABLE = True
-except ImportError:
-    logger.warning("xFormers not available")
-    XFORMERS_AVAILABLE = False
+#     XFORMERS_AVAILABLE = True
+# except ImportError:
+#     logger.warning("xFormers not available")
+#     XFORMERS_AVAILABLE = False
+
+# No xformers for macOS.
+# Macs use native PyTorch (MPS) for hardware acceleration, which accomplishes the same speed and memory optimizations as Nvidia's xformers.
+XFORMERS_AVAILABLE = False
 
 
 class Attention(nn.Module):
@@ -79,5 +83,3 @@ class MemEffAttention(Attention):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-
-        

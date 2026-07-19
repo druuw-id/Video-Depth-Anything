@@ -1,0 +1,11 @@
+echo ""
+echo "Removing old Python environment."
+rm -rf ./.venv
+
+echo "Creating new Python environment ..."
+echo ""
+uv venv
+source ./.venv/bin/activate
+uv pip install -r requirements.txt
+echo ""
+echo "Creating new Python environment - done"

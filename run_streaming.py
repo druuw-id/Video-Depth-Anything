@@ -36,7 +36,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    DEVICE = 'mps'
 
     model_configs = {
         'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},

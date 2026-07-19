@@ -12,14 +12,18 @@ from .attention import CrossAttention, FeedForward, apply_rotary_emb, precompute
 from einops import rearrange, repeat
 import math
 
-try:
-    import xformers
-    import xformers.ops
+# try:
+#     import xformers
+#     import xformers.ops
 
-    XFORMERS_AVAILABLE = True
-except ImportError:
-    print("xFormers not available")
-    XFORMERS_AVAILABLE = False
+#     XFORMERS_AVAILABLE = True
+# except ImportError:
+#     print("xFormers not available")
+#     XFORMERS_AVAILABLE = False
+
+# No xformers for macOS.
+# Macs use native PyTorch (MPS) for hardware acceleration, which accomplishes the same speed and memory optimizations as Nvidia's xformers.
+XFORMERS_AVAILABLE = False
 
 
 def zero_module(module):
