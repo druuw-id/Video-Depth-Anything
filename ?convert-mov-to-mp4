@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+#
+# Convert .mov files to H.264 .mp4 files with the same width, height and frame
+# rate as the source. Audio is dropped; the output is video only.
+#
+# Usage:
+#   ./?convert-mov-to-mp4 [options] [file.mov | directory ...]
+#
+# With no arguments, every .mov in the current directory is converted.
+
+set -euo pipefail
+
+outdir=""
+crf=0
+
+usage() {
+    cat <<'EOF'
+Usage: ?convert-mov-to-mp4 [options] [file.mov | directory ...]
+
+Converts QuickTime .mov files to H.264 .mp4 files, keeping the source width,
+height and frame rate. The video is not rescaled and the audio is dropped.
+Existing .mp4 files are overwritten.
+
+Options:
+  -o DIR    write the .mp4 files to DIR (default: next to the source file)
+  -q CRF    x264 quality, 0 (lossless) to 51 (worst); default 0
+  -h        show this help
+
+With no file or directory arguments, every .mov in the current directory is
+converted.
+EOF
+}
+
+while getopts ":o:q:h" opt; do
+    case "$opt" in
+        o) outdir="$OPTARG" ;;
+        q) crf="$OPTARG" ;;
+        h) usage; exit 0 ;;
+        :) echo "Error: -$OPTARG requires an argument." >&2; exit 1 ;;
+        *) echo "Error: unknown option -$OPTARG" >&2; usage >&2; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+case "$crf" in
+    ''|*[!0-9]*) echo "Error: -q takes a number from 0 to 51." >&2; exit 1 ;;
+esac
+if [ "$crf" -gt 51 ]; then
+    echo "Error: -q takes a number from 0 to 51." >&2
+    exit 1
+fi
+
+for tool in ffmpeg ffprobe; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "Error: $tool not found. Install it with 'brew install ffmpeg'." >&2
+        exit 1
+    fi
+done
+
+if [ -n "$outdir" ]; then
+    mkdir -p "$outdir"
+fi
+
+# Width x height of a file's first video stream, as ffmpeg stores it.
+resolution() {
+    ffprobe -v error -select_streams v:0 -show_entries stream=width,height \
+        -of csv=s=x:p=0 "$1" 2>/dev/null | head -1
+}
+
+convert() {
+    local src=$1
+    local base dest
+
+    base=$(basename "$src")
+    base=${base%.*}
+    if [ -n "$outdir" ]; then
+        dest="$outdir/$base.mp4"
+    else
+        dest="$(dirname "$src")/$base.mp4"
+    fi
+
+    if [ "$src" -ef "$dest" ] 2>/dev/null; then
+        echo "Skipping $src - source and destination are the same file." >&2
+        return
+    fi
+
+    echo "Converting $src ($(resolution "$src")) -> $dest"
+
+    # No -vf scale, so libx264 encodes at the source resolution. Rotated
+    # sources (portrait phone video) are auto-rotated by ffmpeg, which swaps
+    # width and height so the output matches how the source is displayed.
+    ffmpeg -hide_banner -loglevel warning -stats -y \
+        -i "$src" \
+        -map 0:v:0 -an \
+        -c:v libx264 -preset slow -crf "$crf" -pix_fmt yuv420p \
+        -movflags +faststart \
+        "$dest"
+
+    echo "  wrote $dest ($(resolution "$dest"))"
+}
+
+# Expand the arguments (files and/or directories) into a list of .mov files.
+sources=()
+if [ "$#" -eq 0 ]; then
+    set -- .
+fi
+
+for arg in "$@"; do
+    if [ -d "$arg" ]; then
+        while IFS= read -r -d '' file; do
+            sources+=("$file")
+        done < <(find "$arg" -maxdepth 1 -type f -iname '*.mov' -print0 | sort -z)
+    elif [ -f "$arg" ]; then
+        sources+=("$arg")
+    else
+        echo "Error: $arg is not a file or directory." >&2
+        exit 1
+    fi
+done
+
+if [ "${#sources[@]}" -eq 0 ]; then
+    echo "No .mov files found."
+    exit 0
+fi
+
+for src in "${sources[@]}"; do
+    convert "$src"
+done
+
+echo "Done."
